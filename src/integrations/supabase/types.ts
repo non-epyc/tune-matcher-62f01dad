@@ -14,7 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      matches: {
+        Row: {
+          clip_seconds: number
+          created_at: string
+          id: string
+          image_path: string
+          image_vector: Json | null
+          reason: string | null
+          song_id: string | null
+          start_seconds: number
+          user_id: string
+        }
+        Insert: {
+          clip_seconds?: number
+          created_at?: string
+          id?: string
+          image_path: string
+          image_vector?: Json | null
+          reason?: string | null
+          song_id?: string | null
+          start_seconds?: number
+          user_id: string
+        }
+        Update: {
+          clip_seconds?: number
+          created_at?: string
+          id?: string
+          image_path?: string
+          image_vector?: Json | null
+          reason?: string | null
+          song_id?: string | null
+          start_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      songs: {
+        Row: {
+          artist: string | null
+          bass: number
+          bpm: number | null
+          brightness: number
+          created_at: string
+          duration: number
+          energy: number
+          energy_curve: number[]
+          id: string
+          storage_path: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          artist?: string | null
+          bass?: number
+          bpm?: number | null
+          brightness?: number
+          created_at?: string
+          duration?: number
+          energy?: number
+          energy_curve?: number[]
+          id?: string
+          storage_path: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          artist?: string | null
+          bass?: number
+          bpm?: number | null
+          brightness?: number
+          created_at?: string
+          duration?: number
+          energy?: number
+          energy_curve?: number[]
+          id?: string
+          storage_path?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
