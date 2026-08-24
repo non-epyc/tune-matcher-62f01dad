@@ -12,11 +12,15 @@ Website dengan login, tempat Anda mengunggah koleksi lagu, lalu mengunggah gamba
    - pemutar yang langsung memainkan potongan itu saja (loop di rentang tersebut).
 4. **Riwayat** — daftar pasangan gambar + lagu + potongan yang sudah dibuat, bisa dibuka atau dihapus.
 
-## Cara AI mencocokkan
+## Cara AI mencocokkan (dengan analisis audio nyata)
 
-- Saat lagu diupload: AI menghasilkan profil mood singkat (energi, suasana, kata kunci) dari judul/artis, dan Anda bisa mengoreksi tag mood secara manual.
-- Saat gambar diupload: model vision membaca gambar (mood, warna, situasi), lalu memilih lagu dengan profil mood paling dekat dan mengusulkan detik mulai potongan (mis. menuju bagian klimaks lagu berdasar durasi lagu dan mood gambar).
+- **Saat lagu diupload (di browser, sebelum file dikirim):** file didekode dengan Web Audio API dan dianalisis per potongan 1 detik: energi (RMS), kecerahan spektral, estimasi tempo (BPM), dan level bass. Hasilnya jadi "sidik jari" lagu: energi rata-rata, tempo, terang/gelap, plus kurva energi seluruh lagu. Hanya angka-angka ringkas ini yang disimpan (bukan data audio mentah).
+- **Bagian paling cocok:** dari kurva energi, sistem mencari jendela sepanjang durasi story (15/30/60 detik) dengan skor terbaik — mis. bagian paling energik & konsisten untuk gambar ceria, atau bagian paling tenang untuk gambar lembut. Ini murni perhitungan, jadi presisinya tidak bergantung pada AI.
+- **Saat gambar diupload:** model vision membaca gambar dan mengeluarkan angka setara (energi 0-1, kehangatan, terang/gelap, tempo yang diinginkan, kata kunci mood).
+- **Pencocokan:** jarak antara vektor gambar dan sidik jari setiap lagu dihitung di server; lagu dengan jarak terkecil menang, lalu bagian terbaiknya dipilih seperti di atas. AI juga memberi satu kalimat alasan.
+- Opsional: AI mendengarkan potongan terpilih (10-15 detik audio dikirim ke model) untuk verifikasi/alasan yang lebih kaya — bisa dimatikan agar hemat biaya.
 - Semua pemanggilan AI berjalan di server, tanpa API key yang perlu Anda siapkan.
+
 
 ## Hemat memori/penyimpanan
 
@@ -33,11 +37,14 @@ Tema gelap ringkas, satu warna aksen, tanpa gambar dekoratif berat: header + nav
 
 - Lovable Cloud diaktifkan: auth email/password, database, storage.
 - Storage: bucket privat `songs` dan `images`, akses lewat path `{user_id}/...` + RLS pada `storage.objects`.
-- Tabel: `profiles` (nama tampilan), `songs` (judul, artis, path, durasi, mood_tags, mood_summary), `matches` (image_path, song_id, start_seconds, clip_seconds, reason). Semua dengan GRANT + RLS scoped ke `auth.uid()`.
-- Analisis AI lewat server function (Lovable AI Gateway, model vision Gemini) — gambar dikirim sebagai data URL, output JSON tervalidasi Zod.
+- Tabel: `profiles`, `songs` (judul, artis, path, durasi, bpm, energy, brightness, bass, `energy_curve` sebagai array float per detik), `matches` (image_path, song_id, start_seconds, clip_seconds, image_vector, reason). Semua dengan GRANT + RLS scoped ke `auth.uid()`.
+- Analisis audio: `AudioContext.decodeAudioData` + `AnalyserNode`/FFT manual di Web Worker agar UI tidak macet; kurva energi disimpan didownsample (1 nilai/detik) sehingga hanya beberapa KB per lagu.
+- Pemilihan segmen: sliding window pada `energy_curve` dengan skor = kedekatan energi target + stabilitas, dihitung di server function.
+- Analisis gambar via server function ke Lovable AI Gateway (model vision Gemini), output JSON tervalidasi Zod; opsi verifikasi audio mengirim potongan terpilih sebagai `input_audio`.
 - Rute: `/` landing + CTA masuk, `/auth`, dan `_authenticated/library`, `_authenticated/match`, `_authenticated/history`.
-- Pemutar potongan memakai elemen audio dengan pembatas waktu mulai/akhir dan tombol loop.
+- Pemutar potongan memakai elemen audio dengan batas mulai/akhir dan tombol loop.
 
 ## Yang perlu Anda ketahui
 
-Pencocokan didasarkan pada mood yang disimpulkan AI dari metadata lagu, bukan analisis gelombang audio; menambahkan tag mood manual akan membuat hasil lebih tepat.
+Analisis audio dilakukan di browser saat upload, jadi lagu panjang butuh beberapa detik pemrosesan sekali saja. Tempo/energi hasil analisis akurat, tetapi "mood" gambar tetap penilaian AI — Anda masih bisa mengganti lagu secara manual bila hasilnya kurang pas.
+
