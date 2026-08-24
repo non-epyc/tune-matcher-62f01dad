@@ -12,11 +12,15 @@ Website dengan login, tempat Anda mengunggah koleksi lagu, lalu mengunggah gamba
    - pemutar yang langsung memainkan potongan itu saja (loop di rentang tersebut).
 4. **Riwayat** — daftar pasangan gambar + lagu + potongan yang sudah dibuat, bisa dibuka atau dihapus.
 
-## Cara AI mencocokkan
+## Cara AI mencocokkan (dengan analisis audio nyata)
 
-- Saat lagu diupload: AI menghasilkan profil mood singkat (energi, suasana, kata kunci) dari judul/artis, dan Anda bisa mengoreksi tag mood secara manual.
-- Saat gambar diupload: model vision membaca gambar (mood, warna, situasi), lalu memilih lagu dengan profil mood paling dekat dan mengusulkan detik mulai potongan (mis. menuju bagian klimaks lagu berdasar durasi lagu dan mood gambar).
+- **Saat lagu diupload (di browser, sebelum file dikirim):** file didekode dengan Web Audio API dan dianalisis per potongan 1 detik: energi (RMS), kecerahan spektral, estimasi tempo (BPM), dan level bass. Hasilnya jadi "sidik jari" lagu: energi rata-rata, tempo, terang/gelap, plus kurva energi seluruh lagu. Hanya angka-angka ringkas ini yang disimpan (bukan data audio mentah).
+- **Bagian paling cocok:** dari kurva energi, sistem mencari jendela sepanjang durasi story (15/30/60 detik) dengan skor terbaik — mis. bagian paling energik & konsisten untuk gambar ceria, atau bagian paling tenang untuk gambar lembut. Ini murni perhitungan, jadi presisinya tidak bergantung pada AI.
+- **Saat gambar diupload:** model vision membaca gambar dan mengeluarkan angka setara (energi 0-1, kehangatan, terang/gelap, tempo yang diinginkan, kata kunci mood).
+- **Pencocokan:** jarak antara vektor gambar dan sidik jari setiap lagu dihitung di server; lagu dengan jarak terkecil menang, lalu bagian terbaiknya dipilih seperti di atas. AI juga memberi satu kalimat alasan.
+- Opsional: AI mendengarkan potongan terpilih (10-15 detik audio dikirim ke model) untuk verifikasi/alasan yang lebih kaya — bisa dimatikan agar hemat biaya.
 - Semua pemanggilan AI berjalan di server, tanpa API key yang perlu Anda siapkan.
+
 
 ## Hemat memori/penyimpanan
 
