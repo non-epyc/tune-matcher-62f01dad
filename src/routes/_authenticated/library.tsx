@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Trash2, Upload } from "lucide-react";
+import { FolderOpen, Trash2, Upload } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { formatTime } from "@/components/ClipPlayer";
@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeAudioFile } from "@/lib/audio-analysis";
+import { collectDroppedAudioFiles, isAudioFile } from "@/lib/drop-files";
 import { signedUrl } from "@/lib/storage";
 
 const MAX_BYTES = 15 * 1024 * 1024;
+
 
 export const Route = createFileRoute("/_authenticated/library")({
   head: () => ({
