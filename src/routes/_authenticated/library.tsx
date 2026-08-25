@@ -44,6 +44,10 @@ function LibraryPage() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<string | null>(null);
   const [playing, setPlaying] = useState<{ id: string; url: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
 
   const songs = useQuery({
     queryKey: ["songs"],
