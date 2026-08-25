@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Trash2, Upload } from "lucide-react";
+import { FolderOpen, Trash2, Upload } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { formatTime } from "@/components/ClipPlayer";
@@ -10,9 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { analyzeAudioFile } from "@/lib/audio-analysis";
+import { collectDroppedAudioFiles, isAudioFile } from "@/lib/drop-files";
 import { signedUrl } from "@/lib/storage";
 
 const MAX_BYTES = 15 * 1024 * 1024;
+
 
 export const Route = createFileRoute("/_authenticated/library")({
   head: () => ({
@@ -42,6 +44,10 @@ function LibraryPage() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState<string | null>(null);
   const [playing, setPlaying] = useState<{ id: string; url: string } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepth = useRef(0);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
 
   const songs = useQuery({
     queryKey: ["songs"],
@@ -122,6 +128,18 @@ function LibraryPage() {
     }
   }
 
+  function startUpload(files: File[]) {
+    if (upload.isPending) {
+      toast.info("Tunggu upload yang sedang berjalan selesai.");
+      return;
+    }
+    if (files.length === 0) {
+      toast.error("Tidak ada file audio yang ditemukan.");
+      return;
+    }
+    upload.mutate(files);
+  }
+
   return (
     <AppShell>
       <h1 className="text-2xl font-semibold">Library lagu</h1>
@@ -129,24 +147,85 @@ function LibraryPage() {
         Audio dianalisis di browser saat upload: energi per detik, tempo, bass, dan kecerahan.
       </p>
 
-      <div className="mt-6 rounded-xl border border-dashed border-border bg-card p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <Upload className="size-5 text-primary" />
-          <Input
+      <div
+        onDragEnter={(event) => {
+          event.preventDefault();
+          dragDepth.current += 1;
+          setIsDragging(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          dragDepth.current = Math.max(0, dragDepth.current - 1);
+          if (dragDepth.current === 0) setIsDragging(false);
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          dragDepth.current = 0;
+          setIsDragging(false);
+          setProgress("Membaca folder…");
+          void collectDroppedAudioFiles(event.dataTransfer)
+            .then((files) => {
+              setProgress(null);
+              startUpload(files);
+            })
+            .catch(() => {
+              setProgress(null);
+              toast.error("Gagal membaca folder yang di-drop.");
+            });
+        }}
+        className={`mt-6 rounded-xl border-2 border-dashed p-6 transition-colors ${
+          isDragging ? "border-primary bg-primary/10" : "border-border bg-card"
+        }`}
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <FolderOpen className={`size-7 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+          <p className="text-sm font-medium">
+            Tarik & lepas folder lagu ke sini — subfolder ikut dibaca.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={upload.isPending}
+              onClick={() => folderInputRef.current?.click()}
+            >
+              <FolderOpen className="mr-2 size-4" /> Pilih folder
+            </Button>
+            <Input
+              type="file"
+              accept="audio/*"
+              multiple
+              className="max-w-56"
+              disabled={upload.isPending}
+              onChange={(event) => {
+                const files = Array.from(event.target.files ?? []).filter(isAudioFile);
+                event.target.value = "";
+                if (files.length) startUpload(files);
+              }}
+            />
+          </div>
+          <input
+            ref={folderInputRef}
             type="file"
-            accept="audio/*"
             multiple
-            className="max-w-xs"
-            disabled={upload.isPending}
+            className="hidden"
+            // @ts-expect-error non-standard folder-picker attributes
+            webkitdirectory="true"
+            directory="true"
             onChange={(event) => {
-              const files = Array.from(event.target.files ?? []);
+              const files = Array.from(event.target.files ?? []).filter(isAudioFile);
               event.target.value = "";
-              if (files.length) upload.mutate(files);
+              startUpload(files);
             }}
           />
-          <span className="text-xs text-muted-foreground">Maks 15 MB per file.</span>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Upload className="size-3" /> Maks 15 MB per file.
+          </span>
         </div>
-        {progress ? <p className="mt-3 text-sm text-primary">{progress}</p> : null}
+        {progress ? <p className="mt-4 text-center text-sm text-primary">{progress}</p> : null}
+
       </div>
 
       <div className="mt-8 space-y-3">
