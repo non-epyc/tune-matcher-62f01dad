@@ -226,7 +226,7 @@ function LibraryPage() {
       ]);
       void runQueue();
     },
-    [runQueue],
+    [runQueue, updateQueue],
   );
 
   function cancelItem(item: QueueItem) {
