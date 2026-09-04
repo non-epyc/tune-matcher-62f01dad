@@ -34,7 +34,7 @@ function readEntry(entry: FileSystemEntryLike): Promise<File[]> {
   if (entry.isFile) {
     return new Promise((resolve) => {
       entry.file(
-        (file) => resolve(isAudioFile(file) ? [file] : []),
+        (file) => resolve([file]),
         () => resolve([]),
       );
     });
@@ -61,8 +61,26 @@ function readEntry(entry: FileSystemEntryLike): Promise<File[]> {
   });
 }
 
-/** Collect audio files from a drop event, walking dropped folders recursively. */
-export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Promise<File[]> {
+export type CollectedDrop = {
+  /** Files with an accepted audio format. */
+  audio: File[];
+  /** Names of files that were skipped because the format is not supported. */
+  rejected: string[];
+};
+
+/** Split a list of files into accepted audio files and rejected names. */
+export function splitAudioFiles(files: File[]): CollectedDrop {
+  const audio: File[] = [];
+  const rejected: string[] = [];
+  for (const file of files) {
+    if (isAudioFile(file)) audio.push(file);
+    else rejected.push(file.name);
+  }
+  return { audio, rejected };
+}
+
+/** Collect files from a drop event, walking dropped folders recursively. */
+export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Promise<CollectedDrop> {
   const items = Array.from(dataTransfer.items ?? []);
   const entries = items
     .map((item) =>
@@ -74,7 +92,8 @@ export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Prom
 
   if (entries.length > 0) {
     const lists = await Promise.all(entries.map(readEntry));
-    return lists.flat();
+    return splitAudioFiles(lists.flat());
   }
-  return Array.from(dataTransfer.files ?? []).filter(isAudioFile);
+  return splitAudioFiles(Array.from(dataTransfer.files ?? []));
 }
+
