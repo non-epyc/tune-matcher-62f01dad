@@ -1,10 +1,25 @@
-const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "webm", "opus"];
+export const ALLOWED_AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "opus"] as const;
+
+const ALLOWED_MIME_HINTS = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/flac",
+  "audio/x-flac",
+  "audio/opus",
+];
 
 export function isAudioFile(file: File) {
-  if (file.type.startsWith("audio/")) return true;
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  return AUDIO_EXTENSIONS.includes(extension);
+  if ((ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(extension)) return true;
+  return ALLOWED_MIME_HINTS.includes(file.type.toLowerCase());
 }
+
 
 type FileSystemEntryLike = {
   isFile: boolean;
@@ -19,7 +34,7 @@ function readEntry(entry: FileSystemEntryLike): Promise<File[]> {
   if (entry.isFile) {
     return new Promise((resolve) => {
       entry.file(
-        (file) => resolve(isAudioFile(file) ? [file] : []),
+        (file) => resolve([file]),
         () => resolve([]),
       );
     });
@@ -46,8 +61,26 @@ function readEntry(entry: FileSystemEntryLike): Promise<File[]> {
   });
 }
 
-/** Collect audio files from a drop event, walking dropped folders recursively. */
-export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Promise<File[]> {
+export type CollectedDrop = {
+  /** Files with an accepted audio format. */
+  audio: File[];
+  /** Names of files that were skipped because the format is not supported. */
+  rejected: string[];
+};
+
+/** Split a list of files into accepted audio files and rejected names. */
+export function splitAudioFiles(files: File[]): CollectedDrop {
+  const audio: File[] = [];
+  const rejected: string[] = [];
+  for (const file of files) {
+    if (isAudioFile(file)) audio.push(file);
+    else rejected.push(file.name);
+  }
+  return { audio, rejected };
+}
+
+/** Collect files from a drop event, walking dropped folders recursively. */
+export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Promise<CollectedDrop> {
   const items = Array.from(dataTransfer.items ?? []);
   const entries = items
     .map((item) =>
@@ -59,7 +92,8 @@ export async function collectDroppedAudioFiles(dataTransfer: DataTransfer): Prom
 
   if (entries.length > 0) {
     const lists = await Promise.all(entries.map(readEntry));
-    return lists.flat();
+    return splitAudioFiles(lists.flat());
   }
-  return Array.from(dataTransfer.files ?? []).filter(isAudioFile);
+  return splitAudioFiles(Array.from(dataTransfer.files ?? []));
 }
+
