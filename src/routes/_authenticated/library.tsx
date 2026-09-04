@@ -214,7 +214,7 @@ function LibraryPage() {
         if (rejected.length === 0) toast.error("Tidak ada file audio yang ditemukan.");
         return;
       }
-      setQueue((items) => [
+      updateQueue((items) => [
         ...items,
         ...files.map((file) => ({
           id: crypto.randomUUID(),
@@ -239,7 +239,7 @@ function LibraryPage() {
   }
 
   function cancelAll() {
-    setQueue((items) =>
+    updateQueue((items) =>
       items.map((item) => {
         if (item.status === "done" || item.status === "canceled") return item;
         canceledRef.current.add(item.id);
@@ -257,7 +257,7 @@ function LibraryPage() {
   }
 
   function retryAllFailed() {
-    setQueue((items) =>
+    updateQueue((items) =>
       items.map((item) => {
         if (item.status !== "error" && item.status !== "canceled") return item;
         canceledRef.current.delete(item.id);
@@ -268,7 +268,7 @@ function LibraryPage() {
   }
 
   function clearFinished() {
-    setQueue((items) => items.filter((item) => item.status !== "done"));
+    updateQueue((items) => items.filter((item) => item.status !== "done"));
   }
 
   async function play(song: SongRow) {
