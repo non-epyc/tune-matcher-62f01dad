@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# Tune Matcher
+
+saya ingin membuat website berlogin/signin dimana kita akan mengupload folder lagu, dan kita bisa mengupload gambar yang theme songnya dicocokkan berdasarkan lagu yang kitaa upload sebelumnya. singkatnya web untuk mencocokkan themesong dari suatu gambar, data lagu disimpan di akun login
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/d8c5b016-10bd-4489-9b7e-a62088bf8851).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
