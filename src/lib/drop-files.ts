@@ -1,10 +1,25 @@
-const AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "webm", "opus"];
+export const ALLOWED_AUDIO_EXTENSIONS = ["mp3", "wav", "ogg", "m4a", "aac", "flac", "opus"] as const;
+
+const ALLOWED_MIME_HINTS = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/aac",
+  "audio/flac",
+  "audio/x-flac",
+  "audio/opus",
+];
 
 export function isAudioFile(file: File) {
-  if (file.type.startsWith("audio/")) return true;
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
-  return AUDIO_EXTENSIONS.includes(extension);
+  if ((ALLOWED_AUDIO_EXTENSIONS as readonly string[]).includes(extension)) return true;
+  return ALLOWED_MIME_HINTS.includes(file.type.toLowerCase());
 }
+
 
 type FileSystemEntryLike = {
   isFile: boolean;
