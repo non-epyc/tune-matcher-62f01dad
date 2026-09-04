@@ -97,9 +97,19 @@ function LibraryPage() {
     },
   });
 
-  const patch = useCallback((id: string, changes: Partial<QueueItem>) => {
-    setQueue((items) => items.map((item) => (item.id === id ? { ...item, ...changes } : item)));
+  const queueRef = useRef<QueueItem[]>([]);
+  const updateQueue = useCallback((fn: (items: QueueItem[]) => QueueItem[]) => {
+    queueRef.current = fn(queueRef.current);
+    setQueue(queueRef.current);
   }, []);
+
+  const patch = useCallback(
+    (id: string, changes: Partial<QueueItem>) => {
+      updateQueue((items) => items.map((item) => (item.id === id ? { ...item, ...changes } : item)));
+    },
+    [updateQueue],
+  );
+
 
   const processOne = useCallback(
     async (item: QueueItem) => {
