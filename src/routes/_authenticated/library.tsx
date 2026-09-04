@@ -162,16 +162,11 @@ function LibraryPage() {
 
     try {
       for (;;) {
-        let next: QueueItem | undefined;
-        setQueue((items) => {
-          next = items.find((item) => item.status === "pending");
-          return items;
-        });
-        // allow the state callback above to resolve synchronously
-        await Promise.resolve();
+        const next = queueRef.current.find((item) => item.status === "pending");
         if (!next) break;
 
-        const current = next as QueueItem;
+        const current = next;
+
         if (canceledRef.current.has(current.id)) {
           patch(current.id, { status: "canceled", progress: 0, message: STATUS_LABEL.canceled });
           continue;
